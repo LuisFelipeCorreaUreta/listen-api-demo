@@ -8,6 +8,7 @@ const RESULTS_PER_PAGE = 10
 class EpisodeResult extends Component {
     constructor(props) {
         super(props)
+        const truncated_description = this.props.data.description_original.length > 200 ? this.props.data.description_original.substring(0, 197) + "..." : this.props.data.description_original
         this.state = {
             title: this.props.data.title_original,
             podcastTitle: this.props.data.podcast_title_original,
@@ -18,28 +19,34 @@ class EpisodeResult extends Component {
             rss: this.props.data.rss,
             listennotesUrl: this.props.data.listennotes_url,
             itunesId: this.props.data.itunes_id,
-            description: this.props.data.description_original
+            description: truncated_description
         }
     }
 
     render() {
         const itunesUrl = `https://itunes.apple.com/us/podcast/id${this.state.itunesId}`
         return (
-            <div className="result episode">
-              <a href={this.state.listennotesUrl}>
-                  <h1>{this.state.title}</h1>
+            <div className="search-result episode">
+              <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl}>
+                  {this.state.title}
               </a>
-              <img alt={this.state.title} src={this.state.thumbnail} />
-              <p>{this.state.podcastTitle}</p>
-              <p>By {this.state.publisher}</p>
-              <p>{this.state.description}</p>
-              <a href={this.state.audio}>Audio</a>
-              <a href={itunesUrl}>iTunes</a>
-              <a href={this.state.rss}>RSS</a>
+              <div className="search-result-creator">
+                <img className="search-result-creator-thumbnail" alt={this.state.title} src={this.state.thumbnail} />
+                <div className="search-result-creator-names">
+                  <p className="podcast-title">{this.state.podcastTitle}</p>
+                  <p className="publisher">By {this.state.publisher}</p>
+                </div>
+              </div>
+              <p className="search-result-description">{this.state.description}</p>
               <audio controls>
                 <source src={this.state.audio} type="audio/mpeg"/>
                 Your browser does not support the audio element.
               </audio>
+              <div className="search-result-footer">
+                <a href={this.state.audio}>Audio</a>
+                <a rel="noopener noreferrer" target="_blank" href={itunesUrl}>iTunes</a>
+                <a rel="noopener noreferrer" target="_blank" href={this.state.rss}>RSS</a>
+              </div>
             </div>
         )
     }
@@ -48,27 +55,36 @@ class EpisodeResult extends Component {
 class PodcastResult extends Component {
     constructor(props) {
         super(props)
+        const truncated_description = this.props.data.description_original.length > 200 ? this.props.data.description_original.substring(0, 197) + "..." : this.props.data.description_original
         this.state = {
             title: this.props.data.title_original,
+            publisher: this.props.data.publisher_original,
             thumbnail: this.props.data.thumbnail,
             rss: this.props.data.rss,
             listennotesUrl: this.props.data.listennotes_url,
             itunesId: this.props.data.itunes_id,
-            description: this.props.data.description_original
+            description: truncated_description
         }
     }
 
     render() {
         const itunesUrl = `https://itunes.apple.com/us/podcast/id${this.state.itunesId}`
         return (
-            <div className="result podcast">
-              <a href={this.state.listennotesUrl}>
-                  <h1>{this.state.title}</h1>
+            <div className="search-result podcast">
+              <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl}>
+                  {this.state.title}
               </a>
-              <img alt={this.state.title} src={this.state.thumbnail} />
-              <p>{this.state.description}</p>
-              <a href={itunesUrl}>iTunes</a>
-              <a href={this.state.rss}>RSS</a>
+              <div className="search-result-creator">
+                <img className="search-result-creator-thumbnail" alt={this.state.title} src={this.state.thumbnail} />
+                <div className="search-result-creator-names">
+                  <p className="publisher">By {this.state.publisher}</p>
+                </div>
+              </div>
+              <p className="search-result-description">{this.state.description}</p>
+              <div className="search-result-footer">
+                <a className="bottom-link" rel="noopener noreferrer" target="_blank" href={itunesUrl}>iTunes</a>
+                <a className="bottom-link" rel="noopener noreferrer" target="_blank" href={this.state.rss}>RSS</a>
+              </div>
             </div>
         )
     }
@@ -83,10 +99,11 @@ class App extends Component {
         offset: 0,
         sortByDate: '0',
         searchType: 'episode',
+        resultType: 'episode',
         quotaExceeded: false,
         errorOccurred: false
     }
-    this.handleClick = this.handleClick.bind(this)
+    this.handleSubmit = this.handleSubmit.bind(this)
     this.handleChange = this.handleChange.bind(this)
     this.handleTypeChange = this.handleTypeChange.bind(this)
     this.handleSortByChange = this.handleSortByChange.bind(this)
@@ -104,6 +121,7 @@ class App extends Component {
       .then(response => {
       this.setState(prevState => ({...prevState,
         data: response.data,
+        resultType: this.state.searchType,
         offset: 0,
         quotaExceeded: false,
         errorOccurred: false
@@ -117,7 +135,6 @@ class App extends Component {
             errorOccurred: false
           }))
         } else {
-          console.log(error.response)
           this.setState(prevState => ({
             data: [],
             offset: 0,
@@ -143,16 +160,17 @@ class App extends Component {
       this.setState(prevState => ({...prevState, search: newValue}))
   }
 
-  handleClick() {
+  handleSubmit(e) {
     const requestUrl = `${BACKEND_ROOT_URL}search/?q=${this.state.search}&sort_by_date=${this.state.sortByDate}&type=${this.state.searchType}`
     this.search(requestUrl)
+    e.preventDefault();
   }
 
   render() {
     const resultElements = this.state.data.results ? this.state.data.results.map((d) => {
-      if (d.audio) {
+      if (this.state.resultType === 'episode') {
         return <EpisodeResult key={d.id} data={d}/>
-      } else {
+      } else if (this.state.resultType === 'podcast') {
         return <PodcastResult key={d.id} data={d}/>
       }
     }) : []
@@ -168,24 +186,28 @@ class App extends Component {
         <header className="App-header">
           <h1 className="App-title">Listen API Demo</h1>
         </header>
-        <div onChange={this.handleTypeChange}>
-          <input type="radio" defaultChecked value="episode" id="episodeButton" name="type"/>
-          <label htmlFor="episodeButton">Episode</label>
-          <input type="radio" value="podcast" id="podcastButton" name="type"/>
-          <label htmlFor="podcastButton">Podcast</label>
-        </div>
-        <select onChange={this.handleSortByChange}>
-          <option value="0">Relevance</option>
-          <option value="1">Date</option>
-        </select>
-        <input onChange={this.handleChange} type="text" placeholder="Search" value={this.state.search}/>
-        <button className='button' type="submit" onClick={this.handleClick}>
-          Search
-        </button>
-        <div>
+        <form className="search-form" onSubmit={this.handleSubmit}>
+          <div className="search-form-type" onChange={this.handleTypeChange}>
+            <input type="radio" defaultChecked value="episode" id="episodeButton" name="type"/>
+            <label htmlFor="episodeButton">Episode</label>
+            <input type="radio" value="podcast" id="podcastButton" name="type"/>
+            <label htmlFor="podcastButton">Podcast</label>
+          </div>
+          <select className="search-form-sort-by" onChange={this.handleSortByChange}>
+            <option value="0">Relevance</option>
+            <option value="1">Date</option>
+          </select>
+          <input className="search-form-text" onChange={this.handleChange} type="text" placeholder="Search" value={this.state.search}/>
+          <button className="search-form-submit" type="submit">
+            Search
+          </button>
+        </form>
+        <div className="search-results">
           {quotaExceededMessage}
           {errorOccurredMessage}
           {resultElements}
+        </div>
+        <div className="next-page">
           {nextPageElement}
         </div>
       </div>
