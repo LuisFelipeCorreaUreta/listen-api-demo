@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './App.less';
 import axios from 'axios'
+import poweredByImage from './powered_by_listennotes.png';
 
 const BACKEND_ROOT_URL = process.env.REACT_APP_BACKEND_ROOT_URL || 'http://localhost:8000/'
 const RESULTS_PER_PAGE = 10
@@ -8,18 +9,17 @@ const RESULTS_PER_PAGE = 10
 class EpisodeResult extends Component {
     constructor(props) {
         super(props)
-        const truncated_description = this.props.data.description_original.length > 200 ? this.props.data.description_original.substring(0, 197) + "..." : this.props.data.description_original
         this.state = {
-            title: this.props.data.title_original,
-            podcastTitle: this.props.data.podcast_title_original,
-            publisher: this.props.data.publisher_original,
+            title: this.props.data.title_highlighted,
+            podcastTitle: this.props.data.podcast_title_highlighted,
+            publisher: this.props.data.publisher_highlighted,
             thumbnail: this.props.data.thumbnail,
             audio: this.props.data.audio,
             audioLength: this.props.data.audio_length,
             rss: this.props.data.rss,
             listennotesUrl: this.props.data.listennotes_url,
             itunesId: this.props.data.itunes_id,
-            description: truncated_description
+            description: this.props.data.description_highlighted
         }
     }
 
@@ -27,17 +27,16 @@ class EpisodeResult extends Component {
         const itunesUrl = `https://itunes.apple.com/us/podcast/id${this.state.itunesId}`
         return (
             <div className="search-result episode">
-              <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl}>
-                  {this.state.title}
+            <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl} dangerouslySetInnerHTML={{__html: this.state.title}}>
               </a>
               <div className="search-result-creator">
                 <img className="search-result-creator-thumbnail" alt={this.state.title} src={this.state.thumbnail} />
                 <div className="search-result-creator-names">
-                  <p className="podcast-title">{this.state.podcastTitle}</p>
-                  <p className="publisher">By {this.state.publisher}</p>
+                  <p className="podcast-title" dangerouslySetInnerHTML={{__html:this.state.podcastTitle}}></p>
+                  <p className="publisher"><span>By </span><span dangerouslySetInnerHTML={{__html:this.state.publisher}}></span></p>
                 </div>
               </div>
-              <p className="search-result-description">{this.state.description}</p>
+              <p className="search-result-description" dangerouslySetInnerHTML={{__html: this.state.description}}></p>
               <audio controls>
                 <source src={this.state.audio} type="audio/mpeg"/>
                 Your browser does not support the audio element.
@@ -55,15 +54,14 @@ class EpisodeResult extends Component {
 class PodcastResult extends Component {
     constructor(props) {
         super(props)
-        const truncated_description = this.props.data.description_original.length > 200 ? this.props.data.description_original.substring(0, 197) + "..." : this.props.data.description_original
         this.state = {
-            title: this.props.data.title_original,
-            publisher: this.props.data.publisher_original,
+            title: this.props.data.title_highlighted,
+            publisher: this.props.data.publisher_highlighted,
             thumbnail: this.props.data.thumbnail,
             rss: this.props.data.rss,
             listennotesUrl: this.props.data.listennotes_url,
             itunesId: this.props.data.itunes_id,
-            description: truncated_description
+            description: this.props.data.description_highlighted
         }
     }
 
@@ -71,16 +69,14 @@ class PodcastResult extends Component {
         const itunesUrl = `https://itunes.apple.com/us/podcast/id${this.state.itunesId}`
         return (
             <div className="search-result podcast">
-              <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl}>
-                  {this.state.title}
-              </a>
+              <a className="search-result-title" rel="noopener noreferrer" target="_blank" href={this.state.listennotesUrl} dangerouslySetInnerHTML={{__html: this.state.title}}></a>
               <div className="search-result-creator">
                 <img className="search-result-creator-thumbnail" alt={this.state.title} src={this.state.thumbnail} />
                 <div className="search-result-creator-names">
-                  <p className="publisher">By {this.state.publisher}</p>
+                  <p className="publisher"><span>By </span><span dangerouslySetInnerHTML={{__html:this.state.publisher}}></span></p>
                 </div>
               </div>
-              <p className="search-result-description">{this.state.description}</p>
+              <p className="search-result-description" dangerouslySetInnerHTML={{__html: this.state.description}}></p>
               <div className="search-result-footer">
                 <a className="bottom-link" rel="noopener noreferrer" target="_blank" href={itunesUrl}>iTunes</a>
                 <a className="bottom-link" rel="noopener noreferrer" target="_blank" href={this.state.rss}>RSS</a>
@@ -172,6 +168,8 @@ class App extends Component {
         return <EpisodeResult key={d.id} data={d}/>
       } else if (this.state.resultType === 'podcast') {
         return <PodcastResult key={d.id} data={d}/>
+      } else {
+        return null
       }
     }) : []
     const nextPageElement = (this.state.data.results && this.state.data.next_offset <= this.state.data.total - this.state.data.total % RESULTS_PER_PAGE) ? (
@@ -214,6 +212,9 @@ class App extends Component {
         <div className="next-page">
           {nextPageElement}
         </div>
+        <footer>
+          <img alt="Powered by ListenNotes" src={poweredByImage}/>
+        </footer>
       </div>
     );
   }
